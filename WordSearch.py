@@ -11,6 +11,7 @@ __license__ = "MIT"
 import argparse
 import logging
 import re
+import os
 
 
 class DataError(Exception):
@@ -55,16 +56,7 @@ def read_data_from_list(data):
     return puzzle, words
 
 
-def sanitize_data(puzzle, words):
-    """
-    Sanitizes and formats input data.
-    :param puzzle:
-    :param words:
-    :return: puzzle_dims
-    """
-    pass
-
-def search2D(puzzle, row, col, word):
+def match_2d(puzzle, row, col, word):
 
     # Directions - left, down, right, up
     dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
@@ -75,13 +67,16 @@ def search2D(puzzle, row, col, word):
     if puzzle[row][col] != word[0]:
         return None
 
+    # Dimensions
     dim = len(puzzle)
 
     # Search in multiple directions
     for x, y in dirs:
-        for i, ch in enumerate(word[1:], 1):
-            ri = row + i * x
-            ci = col + i * y
+        ri = row
+        ci = col
+        for ch in word[1:]:
+            ri += x
+            ci += y
             if ri < 0 or ri == dim or ci < 0 or ci == dim:
                 break
             if ch != puzzle[ri][ci]:
@@ -93,9 +88,9 @@ def search2D(puzzle, row, col, word):
 
 def search_word(puzzle, word):
     dim = len(puzzle)
-    for row in xrange(0, dim):
-        for col in xrange(0, dim):
-            coord = search2D(puzzle, row, col, word)
+    for row in range(0, dim):
+        for col in range(0, dim):
+            coord = match_2d(puzzle, row, col, word)
             if coord is not None:
                 return (col, row), coord
     return None
@@ -110,7 +105,8 @@ def search_words(puzzle, words):
     """
 
     found = {}
-    # Sort words by length
+    # Sort words by length to prevent words crossings
+    # not needed if crossings are allowed
     for word in sorted(words, key=len, reverse=True):
         coord = search_word(puzzle, word)
         if coord is not None:
@@ -118,19 +114,22 @@ def search_words(puzzle, words):
             found[word] = ((col, row), (y, x))
 
             # Uppercase found word to exclude them from further search
+            # Not needed since crossings are allowed
             # for ri in range(row, x+1) if x > row else range(x, row+1):
             #     for ci in range(col, y+1) if y > col else range(y, col+1):
             #         puzzle[ri][ci] = chr(puzzle[ri][ci]).upper()
     return found
 
 
-def print_results(words, found):
+def format_results(words, found):
+    result = []
     for word in words:
         if word in found:
             (r, c), (x, y) = found[word]
-            print("{} ({}, {}) ({}, {})".format(word.upper(), r+1, c+1, x+1, y+1))
+            result.append("{} ({}, {}) ({}, {})".format(word.upper(), r+1, c+1, x+1, y+1))
         else:
-            print("{} not found".format(word.upper()))
+            result.append("{} not found".format(word.upper()))
+    return result
 
 
 def main(args, loglevel):
@@ -142,32 +141,23 @@ def main(args, loglevel):
     """
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
-    # List of words to find
-    words = []
-
-    # List of strings representing puzzle
-    puzzle = []
-
-    # List of coordinates tuples of found words
-    found = {}
-
     # Section that loads data
     try:
         # Open .pzl file
-        with open(args.puzzle_file, 'r') as pzlfile:
+        with open(args.puzzle_file, 'r') as f:
             # Read data from pzl file
-            data = pzlfile.readlines()
+            data = f.readlines()
         # Parse data
         puzzle, words = read_data_from_list(data)
 
-        # Sanitize input data
-        #dimensions = sanitize_data(puzzle, words)
-
         found = search_words(puzzle, words)
-        print_results(words, found)
-        print("")
-        for i, line in enumerate(puzzle):
-            print("{:2}{}".format(i,line))
+        result = format_results(words, found)
+        out_file_name, _ = os.path.splitext(args.puzzle_file)
+        with open(out_file_name + ".out", 'w') as f:
+            # Write result in output file
+            f.write('\n'.join(result))
+
+        logging.debug(result)
 
     except DataError as err:
         logging.error("Cannot read file {} - {}".format(args.puzzle_file, err))

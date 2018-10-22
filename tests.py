@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for weight_calculator
+Unit tests for WordSearch
 """
 
 __author__ = "Yaroslav Hovorunov"
@@ -9,7 +9,7 @@ __license__ = "MIT"
 
 import unittest
 import csv
-from assignment import *
+from WordSearch import *
 
 
 class TestReadDataFunctions(unittest.TestCase):
