@@ -8,26 +8,26 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import unittest
-import csv
 from WordSearch import *
 
 
 class TestReadDataFunctions(unittest.TestCase):
     """ Testing weight_calculator.read_funds_data """
 
-    def test_assignment_data(self):
+    def test_ok_data1(self):
         """ Testing original assignment data """
-        data = """A,B,1000
-            A,C,2000
-            B,D,500
-            B,E,250
-            B,F,250
-            C,G,1000
-            C,H,1000"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        funds, root_funds = read_data_from_list(reader)
-        self.assertSetEqual(root_funds, set("A"))
-        self.assertSetEqual(set(funds.keys()), {'A','B','C','D','E','F','G','H'})
+        data = """CIRN
+ADOG
+TCIS
+KCOW
+
+CAT
+DOG
+COW"""
+        puzzle, words = read_data_from_list(data.splitlines())
+        self.assertListEqual(words, ["cat", "dog", "cow"])
+        self.assertListEqual(puzzle, [bytearray("cirn"), bytearray("adog"),
+                                      bytearray("tcis"), bytearray("kcow")])
 
     def test_no_root(self):
         data = """A,B,1000

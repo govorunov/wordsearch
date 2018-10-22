@@ -28,19 +28,19 @@ def read_data_from_list(data):
     :raises: DataError, ValueError
     """
     line_n = 0
-    dimensions = len(data[line_n])  # Length of first line
-    if dimensions < 2:  # 1 is '\n'
+    dimensions = len(data[line_n].strip('\n'))  # Length of first line
+    if dimensions < 1:
         raise DataError("Unexpected file format")
     for line_n, line in enumerate(data):
-        if len(line) != dimensions:
+        if len(line.strip('\n')) != dimensions:
             break
     else:
         raise DataError("Unexpected file format")
     # Here line_n should point to the empty line separating puzzle and words list
-    if data[line_n] != "\n":
+    if re.search("[^\s]", data[line_n]):
         raise DataError("Incorrect file format at line {}".format(line_n+1))
-    if dimensions - 1 != line_n:  # dimensions include trailing '\n'
-        raise DataError("Incorrect dimensions {}x{}. Square expected.".format(dimensions-1, line_n))
+    if dimensions != line_n:
+        raise DataError("Incorrect dimensions {}x{}. Square expected.".format(dimensions, line_n))
     puzzle = [bytearray(ln.lower().strip('\n')) for ln in data[:line_n]]
     words = [ln.lower().strip('\n') for ln in data[line_n+1:] if ln != "\n"]
 
@@ -57,6 +57,14 @@ def read_data_from_list(data):
 
 
 def match_2d(puzzle, row, col, word):
+    """
+    Match word in current position in 4 directions
+    :param puzzle:
+    :param row:
+    :param col:
+    :param word:
+    :return: Tuple x, y end coordinates or None
+    """
 
     # Directions - left, down, right, up
     dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
