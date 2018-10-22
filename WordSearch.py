@@ -22,7 +22,6 @@ class DataError(Exception):
 def read_data_from_list(data):
     """
     Reads data from a list or stream.
-
     :param data: A list with puzzle
     :return: Tuple (puzzle, words)
     :raises: DataError, ValueError
@@ -95,6 +94,12 @@ def match_2d(puzzle, row, col, word):
 
 
 def search_word(puzzle, word):
+    """
+    Search one word in puzzle
+    :param puzzle:
+    :param word:
+    :return: Tuple (col, row), (x, y) coordinates or None
+    """
     dim = len(puzzle)
     for row in range(0, dim):
         for col in range(0, dim):
@@ -109,7 +114,7 @@ def search_words(puzzle, words):
     Searches for words in puzzle
     :param puzzle:
     :param words:
-    :return:
+    :return: Dictionary of found words with coordinates
     """
 
     found = {}
@@ -130,6 +135,12 @@ def search_words(puzzle, words):
 
 
 def format_results(words, found):
+    """
+    Format result into strings
+    :param words:
+    :param found:
+    :return: List of strings
+    """
     result = []
     for word in words:
         if word in found:
