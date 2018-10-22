@@ -30,17 +30,18 @@ def read_data_from_list(data):
     dimensions = len(data[line_n])  # Length of first line
     if dimensions < 2:  # 1 is '\n'
         raise DataError("Unexpected file format")
-    while len(data[line_n]) == dimensions:
-        line_n += 1
-    # Here line_n should point to the first empty line separating puzzle and words list
+    for line_n, line in enumerate(data):
+        if len(line) != dimensions:
+            break
+    else:
+        raise DataError("Unexpected file format")
+    # Here line_n should point to the empty line separating puzzle and words list
     if data[line_n] != "\n":
         raise DataError("Incorrect file format at line {}".format(line_n+1))
-    if data[line_n+1] != "\n":
-        raise DataError("Incorrect file format at line {}".format(line_n+2))
     if dimensions - 1 != line_n:  # dimensions include trailing '\n'
-        raise DataError("Incorrect dimensions {}x{}. Square expected.".format(dimensions-1, line_n-1))
+        raise DataError("Incorrect dimensions {}x{}. Square expected.".format(dimensions-1, line_n))
     puzzle = [bytearray(ln.lower().strip('\n')) for ln in data[:line_n]]
-    words = [ln.lower().strip('\n') for ln in data[line_n+2:] if ln != "\n"]
+    words = [ln.lower().strip('\n') for ln in data[line_n+1:] if ln != "\n"]
 
     # make sure data contains letters only
     nonletters = re.compile("[^\w\s]")
@@ -61,14 +62,14 @@ def sanitize_data(puzzle, words):
     :param words:
     :return: puzzle_dims
     """
-    if len(puzzle) < 1:
-        raise DataError("Data is looped, expected Tree or Forest")
-
+    pass
 
 def search2D(puzzle, row, col, word):
 
     # Directions - left, down, right, up
-    DIRS = [(1,0),(0,1),(-1,0),(0,-1)]
+    dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+
+    word = bytearray(word)
 
     # Check starting point first
     if puzzle[row][col] != word[0]:
@@ -77,8 +78,8 @@ def search2D(puzzle, row, col, word):
     dim = len(puzzle)
 
     # Search in multiple directions
-    for x, y in DIRS:
-        for i, ch in enumerate(word[1:]):
+    for x, y in dirs:
+        for i, ch in enumerate(word[1:], 1):
             ri = row + i * x
             ci = col + i * y
             if ri < 0 or ri == dim or ci < 0 or ci == dim:
@@ -87,6 +88,16 @@ def search2D(puzzle, row, col, word):
                 break
         else:
             return ri, ci
+    return None
+
+
+def search_word(puzzle, word):
+    dim = len(puzzle)
+    for row in xrange(0, dim):
+        for col in xrange(0, dim):
+            coord = search2D(puzzle, row, col, word)
+            if coord is not None:
+                return (col, row), coord
     return None
 
 
@@ -99,19 +110,17 @@ def search_words(puzzle, words):
     """
 
     found = {}
-    dim = len(puzzle)
     # Sort words by length
     for word in sorted(words, key=len, reverse=True):
-        for row in xrange(0,dim):
-            for col in xrange(0,dim):
-                coord = search2D(puzzle, row, col, word)
-                if coord != None:
-                    x, y = coord
-                    found[word] = ((row,col),(x,y))
-                    # Uppercase found word to exclude it from further search
-                    for ri in range(row,x+1) if x > row else range(x,row+1):
-                        for ci in range(col, y+1) if y > col else range(y,col+1):
-                            puzzle[ri][ci] = chr(puzzle[ri][ci]).upper()
+        coord = search_word(puzzle, word)
+        if coord is not None:
+            (col, row), (x, y) = coord
+            found[word] = ((col, row), (y, x))
+
+            # Uppercase found word to exclude them from further search
+            # for ri in range(row, x+1) if x > row else range(x, row+1):
+            #     for ci in range(col, y+1) if y > col else range(y, col+1):
+            #         puzzle[ri][ci] = chr(puzzle[ri][ci]).upper()
     return found
 
 
@@ -119,7 +128,7 @@ def print_results(words, found):
     for word in words:
         if word in found:
             (r, c), (x, y) = found[word]
-            print("{} ({},{}),({},{})".format(word.upper(),r,c,x,y))
+            print("{} ({}, {}) ({}, {})".format(word.upper(), r+1, c+1, x+1, y+1))
         else:
             print("{} not found".format(word.upper()))
 
@@ -156,8 +165,11 @@ def main(args, loglevel):
 
         found = search_words(puzzle, words)
         print_results(words, found)
+        print("")
+        for i, line in enumerate(puzzle):
+            print("{:2}{}".format(i,line))
 
-    except (DataError, ValueError) as err:
+    except DataError as err:
         logging.error("Cannot read file {} - {}".format(args.puzzle_file, err))
         exit(1)
     except OSError as err:
