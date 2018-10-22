@@ -10,6 +10,7 @@ __license__ = "MIT"
 
 import argparse
 import logging
+import re
 
 
 class DataError(Exception):
@@ -17,16 +18,39 @@ class DataError(Exception):
     pass
 
 
-def read_data_from_file(pzlfile):
+def read_data_from_list(data):
     """
     Reads data from a list or stream.
 
-    :param pzlfile: A file with puzzle
+    :param data: A list with puzzle
     :return: Tuple (puzzle, words)
     :raises: DataError, ValueError
     """
-    puzzle = None
-    words = None
+    line_n = 0
+    dimensions = len(data[line_n])  # Length of first line
+    if dimensions < 2:  # 1 is '\n'
+        raise DataError("Unexpected file format")
+    while len(data[line_n]) == dimensions:
+        line_n += 1
+    # Here line_n should point to the first empty line separating puzzle and words list
+    if data[line_n] != "\n":
+        raise DataError("Incorrect file format at line {}".format(line_n+1))
+    if data[line_n+1] != "\n":
+        raise DataError("Incorrect file format at line {}".format(line_n+2))
+    if dimensions - 1 != line_n:  # dimensions include trailing '\n'
+        raise DataError("Incorrect dimensions {}x{}. Square expected.".format(dimensions-1, line_n-1))
+    puzzle = [ln.lower().strip('\n') for ln in data[:line_n]]
+    words = [ln.lower().strip('\n') for ln in data[line_n+2:] if ln != "\n"]
+
+    # make sure data contains letters only
+    nonletters = re.compile("[^\w\s]")
+    for i, s in enumerate(puzzle):
+        if nonletters.search(s):
+            raise DataError("Incorrect file format at line {}".format(i+1))
+    for i, s in enumerate(words):
+        if nonletters.search(s):
+            raise DataError("Incorrect file format at line {}".format(i+line_n+3))
+
     return puzzle, words
 
 
@@ -39,6 +63,18 @@ def sanitize_data(puzzle, words):
     """
     if len(puzzle) < 1:
         raise DataError("Data is looped, expected Tree or Forest")
+
+
+def search_words(puzzle, words):
+    """
+    Searches for words in puzzle
+    :param puzzle:
+    :param words:
+    :return:
+    """
+
+
+def search2D(puzzle):
 
 
 def print_results(words, found):
@@ -67,16 +103,17 @@ def main(args, loglevel):
         # Open .pzl file
         with open(args.puzzle_file, 'r') as pzlfile:
             # Read data from pzl file
-            puzzle, words = read_data_from_file(pzlfile)
+            puzzle, words = read_data_from_list(pzlfile.readlines())
+            words.sort(key=len, reverse=True)
 
         # Sanitize input data
         dimensions = sanitize_data(puzzle, words)
 
     except (DataError, ValueError) as err:
-        logging.error("Cannot read file {} - {}".format(args.data_file, err))
+        logging.error("Cannot read file {} - {}".format(args.puzzle_file, err))
         exit(1)
     except OSError as err:
-        logging.error("Cannot open file {} - {}".format(args.data_file, err.strerror))
+        logging.error("Cannot open file {} - {}".format(args.puzzle_file, err.strerror))
         exit(err.errno)
     except Exception:
         logging.exception("Unexpected error")
