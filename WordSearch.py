@@ -176,7 +176,7 @@ def main(args, loglevel):
             # Write result in output file
             f.write('\n'.join(result))
 
-        logging.debug(result)
+        logging.debug('\n'.join(result))
 
     except DataError as err:
         logging.error("Cannot read file {} - {}".format(args.puzzle_file, err))

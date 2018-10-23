@@ -17,142 +17,161 @@ class TestReadDataFunctions(unittest.TestCase):
     def test_ok_data1(self):
         """ Testing original assignment data """
         data = """CIRN
-ADOG
-TCIS
-KCOW
-
-CAT
-DOG
-COW"""
-        puzzle, words = read_data_from_list(data.splitlines())
+            ADOG
+            TCIS
+            KCOW
+            
+            CAT
+            DOG
+            COW"""
+        data = [s.strip() for s in data.splitlines()]
+        puzzle, words = read_data_from_list(data)
         self.assertListEqual(words, ["cat", "dog", "cow"])
         self.assertListEqual(puzzle, [bytearray("cirn"), bytearray("adog"),
                                       bytearray("tcis"), bytearray("kcow")])
 
-    def test_no_root(self):
-        data = """A,B,1000
-            A,C,2000
-            B,D,500
-            B,E,250
-            B,F,250
-            C,G,1000
-            C,H,1000
-            C,A,500"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        funds, root_funds = read_data_from_list(reader)
-        self.assertSetEqual(root_funds, set())
+    def test_nonsquare(self):
+        """ Testing data is not square """
+        data = """CIRN
+            ADOG
+            TCIS
+            
+            CAT
+            DOG
+            COW"""
+        data = [s.strip() for s in data.splitlines()]
+        self.assertRaises(DataError, read_data_from_list, data)
 
-    def test_duplicate_entry(self):
-        data = """A,B,1000
-            A,C,2000
-            B,D,500
-            B,E,250
-            B,F,250
-            C,G,1000
-            C,H,1000
-            C,A,500
-            B,E,500"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        self.assertRaises(DataError, read_data_from_list, reader)
+    def test_spaces(self):
+        """ Testing spaces in data """
+        data = """C RN
+            A OG
+            TC S
+            KCOW
+            
+            CAT
+            DOG
+            COW"""
+        data = [s.strip() for s in data.splitlines()]
+        puzzle, words = read_data_from_list(data)
+        self.assertListEqual(words, ["cat", "dog", "cow"])
+        self.assertListEqual(puzzle, [bytearray("c rn"), bytearray("a og"),
+                                      bytearray("tc s"), bytearray("kcow")])
 
-    def test_incorrect_format_less(self):
-        data = """A,B,1000
-            A,C,2000
-            B,D
-            B,E,250
-            B,F,250"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        self.assertRaises(DataError, read_data_from_list, reader)
+    def test_no_words(self):
+        """ Testing malformed """
+        data = """CIRN
+            ADOG
+            TCIS
+            KCOW"""
+        data = [s.strip() for s in data.splitlines()]
+        self.assertRaises(DataError, read_data_from_list, data)
 
-    def test_incorrect_format_more(self):
-        data = """A,B,1000
-            A,C,2000
-            B,D,500,W
-            B,E,250
-            B,F,250"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        self.assertRaises(DataError, read_data_from_list, reader)
-
-    def test_incorrect_format_value(self):
-        data = """A,B,1000
-            A,C,2000
-            B,D,
-            B,E,250
-            B,F,250"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        self.assertRaises(ValueError, read_data_from_list, reader)
+    def test_nonsquare2(self):
+        """ Testing data is not square """
+        data = """CIRN
+            ADOG
+            TCIS
+            COW
+            
+            CAT
+            DOG
+            COW"""
+        data = [s.strip() for s in data.splitlines()]
+        self.assertRaises(DataError, read_data_from_list, data)
 
 
-class TestCalculateWeightsFunctions(unittest.TestCase):
-    """ Testing weight_calculator.calculate_weights """
+class TestSearchAndFormat(unittest.TestCase):
+    """ Testing search and format """
 
-    def test_assignment_data(self):
+    def test_ok_data1(self):
         """ Testing original assignment data """
-        data = """A,B,1000
-            A,C,2000
-            B,D,500
-            B,E,250
-            B,F,250
-            C,G,1000
-            C,H,1000"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        funds, root_funds = read_data_from_list(reader)
-        value, weights = calculate_weights(funds, "A")
-        self.assertEqual(value, 3000)
-        self.assertSetEqual(set(weights.keys()), {'D','E','F','G','H'})
-        test_list = [round(float(elem), 3) for elem in weights.values()]
-        self.assertAlmostEqual(1, sum(weights.values()))
-        self.assertListEqual(test_list, [0.167, 0.083, 0.083, 0.333, 0.333])
+        data = """CIRN
+            ADOG
+            TCIS
+            KCOW
+            
+            CAT
+            DOG
+            COW"""
+        data = [s.strip() for s in data.splitlines()]
+        puzzle, words = read_data_from_list(data)
+        found = search_words(puzzle, words)
+        result = format_results(words, found)
+        self.assertListEqual(result, ["CAT (1, 1) (1, 3)",
+                                      "DOG (2, 2) (4, 2)",
+                                      "COW (2, 4) (4, 4)"])
 
-    def test_complex_path(self):
+    def test_ok_data2(self):
         """ Testing original assignment data """
-        data = """A,B,500
-                A,C,2100
-                B,D,500
-                B,E,250
-                B,F,250
-                C,G,500
-                C,H,1000
-                C,B,500
-                C,D,100"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        funds, root_funds = read_data_from_list(reader)
-        value, weights = calculate_weights(funds, "A")
-        self.assertEqual(value, 2600)
-        self.assertSetEqual(set(weights.keys()), {'D','E','F','G','H'})
-        test_list = [round(float(elem), 3) for elem in weights.values()]
-        self.assertListEqual(test_list, [0.135,0.096,0.096,0.192,0.385])
+        data = """DNOMAID
+                PQINEEG
+                XXWQTDK
+                CDKBRAF
+                UWERAFX
+                TDAFESJ
+                AKJSHHE
+                
+                DIAMOND
+                HEART"""
+        data = [s.strip() for s in data.splitlines()]
+        puzzle, words = read_data_from_list(data)
+        found = search_words(puzzle, words)
+        result = format_results(words, found)
+        self.assertListEqual(result, ["DIAMOND (7, 1) (1, 1)",
+                                      "HEART (5, 7) (5, 3)"])
 
-    def test_looped_data(self):
+    def test_ok_data3(self):
         """ Testing original assignment data """
-        data = """A,B,1000
-            A,C,2000
-            B,D,500
-            B,E,250
-            B,F,250
-            D,B,500
-            C,G,1000
-            C,H,1000"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        funds, root_funds = read_data_from_list(reader)
-        self.assertRaises(DataError, calculate_weights, funds, "A")
+        data = """CIRN
+                ADOG
+                TCIS
+                KDIE
+                
+                CAT
+                DOG
+                DUCK"""
+        data = [s.strip() for s in data.splitlines()]
+        puzzle, words = read_data_from_list(data)
+        found = search_words(puzzle, words)
+        result = format_results(words, found)
+        self.assertListEqual(result, ["CAT (1, 1) (1, 3)",
+                                      "DOG (2, 2) (4, 2)",
+                                      "DUCK not found"])
 
-    def test_weighted_returns(self):
-        """ Testing original assignment data """
-        data = """A,B,9
-            A,C,-6
-            B,D,5
-            B,E,3
-            B,F,1
-            C,G,-6
-            C,H,0"""
-        reader = csv.reader(data.splitlines(), skipinitialspace=True)
-        returns, roots = read_data_from_list(reader)
-        total, weights = calculate_weights(returns, "A", set())
-        self.assertEqual(int(total), 3)
-        self.assertSetEqual(set(weights.keys()), {'D','E','F','G','H'})
-        test_list = [round(float(total * elem), 3) for elem in weights.values()]
-        self.assertListEqual(test_list, [5.000, 3.000, 1.000, -6.000, 0.000])
+
+class TestEndToEnd(unittest.TestCase):
+    """ Testing with files """
+
+    def test_end_to_end1(self):
+        """ Testing end to end """
+        with open('puzzle1.pzl', 'r') as f:
+            # Read data from pzl file
+            data = f.readlines()
+        puzzle, words = read_data_from_list(data)
+        found = search_words(puzzle, words)
+        result = format_results(words, found)
+        self.assertListEqual(result, ["THE (38, 12) (38, 10)",
+                                      "INTERNAL (27, 15) (27, 8)",
+                                      "REPRESENTATION (33, 25) (33, 38)",
+                                      "OF (17, 6) (17, 5)",
+                                      "DATATYPE (14, 31) (7, 31)",
+                                      "IS (8, 15) (7, 15)",
+                                      "CRITICALLY (34, 8) (25, 8)",
+                                      "IMPORTANT (20, 19) (12, 19)",
+                                      "WHEN (35, 8) (35, 11)",
+                                      "INTERFACING (30, 22) (30, 32)",
+                                      "WITH (9, 18) (9, 15)",
+                                      "CODE (19, 10) (16, 10)",
+                                      "AND (28, 2) (30, 2)",
+                                      "SEVERAL (6, 23) (6, 17)",
+                                      "FUNCTIONS (11, 20) (11, 12)",
+                                      "ARE (36, 10) (38, 10)",
+                                      "AVAILABLE (18, 30) (26, 30)",
+                                      "TO (35, 2) (35, 3)",
+                                      "INSPECT (23, 20) (17, 20)",
+                                      "THESE (7, 35) (7, 31)",
+                                      "DETAILS (31, 20) (25, 20)"])
 
 
 if __name__ == '__main__':
