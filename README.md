@@ -1,49 +1,35 @@
-# Portfolio weight calculator assignment
+# 2D word search
 
 ##### Author: Yaroslav Hovorunov
 ##### License: MIT
 
-Calculates weights of base funds (assets) in portfolio(s). Supports graphs
-when base fund is included in root fund through complex path. Detects
-loops in data to prevent infinite loops or incorrect calculations.
+A program in Python that locates words in a 2 dimensional grid of letters and outputs the start and end coordinates for each of the words found. The grid has the same number of rows and columns (X*X). Words can appear vertically, horizontally or diagonally, forwards or backwards. If a word is detected twice in the puzzle, only one result is to be reported.
 
-Expects CSV file on input with the following format:
+Program can be called with the following command:
 
-    A,B,1000
-    A,C,2000
-    B,D,500
-    B,E,250
-    B,F,250
-    C,G,1000
-    C,H,1000
+    python WordSearch.py puzzle1.pzl
 
-Each line like A,B,1000 means value of fund B in fund A is 1000.
-Optional 4th column can be used to include end market values of funds. Example:
+Program takes text file to the input. The input file consists of a grid of letters representing the puzzle, a blank line and a list a words to be searched for, each on a new line. Example of the puzzle1.pzl text file:
 
-    A,B,1000,1009
-    A,C,2000,1994
-    B,D,500,505
-    B,E,250,253
-    B,F,250,251
-    C,G,1000,994
-    C,H,1000,1000
+    ANTR
+    BTOP
+    OZXW  
+    WLKT  
 
-Returns csv data representing weights of each base fund in each root fund found. If end
-market values are provided, 4th column will contain weighted returns. Example of program return:
+    BOW
+    TOP
+    ANT
 
-    A,D,0.167,2.222
-    A,E,0.083,1.333
-    A,F,0.083,0.444
-    A,G,0.333,-3.000
-    A,H,0.333,0.000 
+The program will create puzzle1.out output file, containing list of found words and corresponding coordinates for each word. Each line of the output file is of the following format:
 
-### Usage:
+    word (start coord x, start coord y) (end coord x, end coord y)
 
-    weight_calculator.py [-h] [-v] data_file
-    
-    positional arguments:
-      data_file            A .csv file containing fund data to act on.
-    
-    optional arguments:
-      -h, --help           show this help message and exit
-      -v, --verbose        increase log verbosity
+Example of output file:
+
+    BOW (1, 2) (1, 4)
+    TOP (2, 2) (4, 2)
+    ANT (1, 1) (3, 1)
+
+If the word is not found in the input puzzle it will be reported in the output file as:
+
+    COW not found

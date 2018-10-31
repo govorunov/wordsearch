@@ -65,8 +65,8 @@ def match_2d(puzzle, row, col, word):
     :return: Tuple x, y end coordinates or None
     """
 
-    # Directions - left, down, right, up
-    dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    # Directions - left, down, right, up and 4 directions diagonally
+    dirs = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
     word = bytearray(word)
 
